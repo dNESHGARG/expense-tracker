@@ -1,0 +1,64 @@
+"""SQLite persistence with idempotent transaction imports."""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from decimal import Decimal
+import hashlib
+from pathlib import Path
+import sqlite3
+from typing import Iterator
+
+from .core import Transaction
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS transactions (
+    fingerprint TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    description TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    category TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
+"""
+
+
+def fingerprint(tx: Transaction) -> str:
+    """Stable content key; identical rows are treated as one transaction.
+
+    Note: identical legitimate purchases cannot be distinguished without a bank ID.
+    """
+    fields = (tx.date.isoformat(), tx.description, str(tx.amount.normalize()), tx.category)
+    return hashlib.sha256('\x1f'.join(fields).encode('utf-8')).hexdigest()
+
+
+@contextmanager
+def connect(path: str | Path) -> Iterator[sqlite3.Connection]:
+    db = sqlite3.connect(str(path))
+    try:
+        db.executescript(SCHEMA)
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def import_transactions(db: sqlite3.Connection, transactions: list[Transaction]) -> int:
+    """Insert new transactions atomically; return inserted row count."""
+    before = db.total_changes
+    with db:
+        db.executemany(
+            'INSERT OR IGNORE INTO transactions (fingerprint, date, description, amount, category) VALUES (?, ?, ?, ?, ?)',
+            [(fingerprint(t), t.date.isoformat(), t.description, str(t.amount), t.category) for t in transactions],
+        )
+    return db.total_changes - before
+
+
+def list_transactions(db: sqlite3.Connection) -> list[Transaction]:
+    from datetime import date
+    return [Transaction(date.fromisoformat(day), description, Decimal(amount), category)
+            for day, description, amount, category in db.execute(
+                'SELECT date, description, amount, category FROM transactions ORDER BY date, fingerprint'
+            )]
