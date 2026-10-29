@@ -1,0 +1,5 @@
+date,description,amount,category
+2026-10-01,Coffee,4.50,Food
+2026-10-02,Groceries,38.20,Food
+2026-10-03,Train,12.00,Transport
+2026-10-04,Returned item,-5.00,Food
