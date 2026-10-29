@@ -26,11 +26,11 @@ Run the same command again: the import reports zero new transactions. Query prev
 PYTHONPATH=src python -m expense_tracker --db expenses.db
 ```
 
-Positive amounts represent expenses; negative amounts represent refunds. Required CSV columns: `date,description,amount,category`.
+Positive amounts represent expenses; negative amounts represent refunds. Required CSV columns: `date,description,amount,category`. Optional: `transaction_id` (a stable ID from the financial institution).
 
 ## Duplicate policy
 
-Imports are idempotent by hashing date, description, normalized amount and category. **Tradeoff:** two genuinely separate purchases with identical fields are treated as duplicates. A later version should support an optional bank-provided transaction ID to distinguish them.
+When `transaction_id` is present, imports deduplicate by that ID instead of transaction contents. This preserves distinct purchases with identical dates, descriptions, amounts and categories. Without an ID, the original content fingerprint remains the fallback, so genuinely identical purchases can still collapse. IDs are currently assumed unique across the imported dataset; account/source scoping is a future improvement.
 
 ## Tests
 
@@ -44,5 +44,5 @@ GitHub Actions runs unit tests on Python 3.10, 3.12 and 3.13.
 
 - v0.1: CSV import and monthly category summaries
 - v0.2: SQLite persistence, idempotent imports, CI
-- v0.3: Bank transaction IDs, configurable categorization, CSV export
+- v0.3 (in progress): Optional transaction IDs, database migration; next: account/source scoping, configurable categorization, CSV export
 - v0.4: Web API and reporting
