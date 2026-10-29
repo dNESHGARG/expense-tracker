@@ -13,6 +13,7 @@ class Transaction:
     amount: Decimal
     category: str
     transaction_id: str | None = None
+    account_id: str = 'default'
 
 
 def load_transactions(path: str | Path) -> list[Transaction]:
@@ -37,6 +38,7 @@ def load_transactions(path: str | Path) -> list[Transaction]:
                     amount=amount,
                     category=row['category'].strip() or 'Uncategorized',
                     transaction_id=(row.get('transaction_id') or '').strip() or None,
+                    account_id=(row.get('account_id') or 'default').strip() or 'default',
                 )
             except (ValueError, TypeError, InvalidOperation, AttributeError) as exc:
                 raise ValueError(f'Invalid transaction on CSV line {line}: {exc}') from exc
