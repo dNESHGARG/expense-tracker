@@ -30,7 +30,12 @@ def main() -> None:
                     print(account_id, name, institution)
                 return
             if args.csv_file:
-                inserted = import_transactions(db, load_transactions(args.csv_file))
+                transactions = load_transactions(args.csv_file)
+                if args.account:
+                    if args.account not in {account[0] for account in list_accounts(db)}:
+                        parser.error('unknown account: ' + args.account)
+                    transactions = [replace(tx, account_id=args.account) for tx in transactions]
+                inserted = import_transactions(db, transactions)
                 print(f'Imported {inserted} new transactions')
             transactions = list_transactions(db)
     elif args.csv_file:
