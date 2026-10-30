@@ -56,3 +56,14 @@ date,description,amount,category,transaction_id,account_id
 ```
 
 Both rows are valid: the external transaction ID is unique within each account, not globally.
+
+## Planned milestone: Local data security and import hardening
+
+**Status: Backlog — not implemented or security-certified.** Complete before accepting untrusted files or distributing the application to other users.
+
+1. **Database confidentiality:** SQLite is not encrypted by default. Evaluate encryption at rest, database access permissions, and key management. macOS FileVault helps protect the device but does not replace application-level safeguards.
+2. **Cloud synchronization exposure:** Document and detect or warn when the database or imported statements are saved in iCloud Drive, Dropbox, Google Drive, or another synchronized directory; avoid unintended third-party uploads.
+3. **Git and secrets hygiene:** Prevent real statements, SQLite databases, and credentials from being committed. Extend `.gitignore`, add example-only fixtures, and check repository history for accidental sensitive files.
+4. **Untrusted CSV hardening:** Introduce file-size and row-count limits, strict input validation, resource controls, safe error handling, and adversarial tests before public upload support.
+
+**Acceptance criteria:** Documented threat model and data flows; no unintended network transmission; tests covering import limits and malformed inputs; verified Git exclusions; and a clear disclosure of encryption and cloud-backup limitations.
