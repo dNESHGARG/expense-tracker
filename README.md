@@ -28,6 +28,23 @@ PYTHONPATH=src python -m expense_tracker --db expenses.db
 
 Positive amounts represent expenses; negative amounts represent refunds. Required CSV columns: `date,description,amount,category`. Optional: `transaction_id` (a stable ID from the financial institution) and `account_id` (a stable, non-sensitive identifier for the account). If omitted, `account_id` defaults to `default` for backward compatibility.
 
+## Manage accounts
+
+Create an account once, using a non-sensitive ID:
+
+```bash
+PYTHONPATH=src python -m expense_tracker --db expenses.db --add-account checking --name "Everyday Checking" --institution "Example Bank"
+PYTHONPATH=src python -m expense_tracker --db expenses.db --list-accounts
+```
+
+Import a statement into that account (even when the CSV has no `account_id` column):
+
+```bash
+PYTHONPATH=src python -m expense_tracker statement.csv --db expenses.db --account checking
+```
+
+Reimporting the same statement does not duplicate its transactions. Account IDs must be unique. The `default` account is reserved for legacy and unspecified imports. Currently, CSV files must already have the required normalized columns and categories.
+
 ## Duplicate policy
 
 When `transaction_id` is present, imports deduplicate by the pair `(account_id, transaction_id)`, allowing different accounts to use the same external ID. Without a transaction ID, the content fingerprint is scoped to the account; genuinely identical purchases in one account may still collapse. Existing databases migrate automatically and legacy records remain assigned to `default`. Use a stable, non-sensitive account ID, not a bank account number. A future release should introduce explicit account management and import-source tracking.
