@@ -11,6 +11,11 @@ from typing import Iterator
 from .core import Transaction
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS accounts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    institution TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE IF NOT EXISTS transactions (
     fingerprint TEXT PRIMARY KEY,
     date TEXT NOT NULL,
@@ -50,6 +55,8 @@ def connect(path: str | Path) -> Iterator[sqlite3.Connection]:
             db.execute("ALTER TABLE transactions ADD COLUMN account_id TEXT NOT NULL DEFAULT 'default'")
         db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_account_transaction_id '
                    'ON transactions(account_id, transaction_id) WHERE transaction_id IS NOT NULL')
+        db.execute("INSERT OR IGNORE INTO accounts(id, name, institution) VALUES ('default', 'Legacy imports', '')")
+        db.execute("INSERT OR IGNORE INTO accounts(id, name, institution) SELECT DISTINCT account_id, account_id, '' FROM transactions")
         yield db
         db.commit()
     except BaseException:
@@ -81,3 +88,17 @@ def list_transactions(db: sqlite3.Connection) -> list[Transaction]:
                 'SELECT date, description, amount, category, transaction_id, account_id '
                 'FROM transactions ORDER BY date, fingerprint'
             )]
+
+
+def create_account(db: sqlite3.Connection, account_id: str, name: str, institution: str = '') -> None:
+    """Create an account with a stable, non-sensitive identifier."""
+    if not account_id.strip() or not name.strip() or account_id != account_id.strip():
+        raise ValueError('Account ID and display name are required')
+    with db:
+        db.execute('INSERT INTO accounts(id, name, institution) VALUES (?, ?, ?)',
+                   (account_id, name.strip(), institution.strip()))
+
+
+def list_accounts(db: sqlite3.Connection) -> list[tuple[str, str, str]]:
+    """Return (account_id, display_name, institution) tuples."""
+    return list(db.execute('SELECT id, name, institution FROM accounts ORDER BY id'))
