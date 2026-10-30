@@ -46,7 +46,7 @@ class StorageTests(unittest.TestCase):
             with self.assertRaises(sqlite3.IntegrityError):
                 with db:
                     db.execute("INSERT INTO transactions (fingerprint, date, description, amount, category) VALUES ('one', '2026-10-01', 'a', '1', 'Food')")
-                    db.execute("INSERT INTO transactions VALUES ('two', NULL, 'b', '2', 'Food')")
+                    db.execute("INSERT INTO transactions (fingerprint, date, description, amount, category) VALUES ('two', NULL, 'b', '2', 'Food')")
             self.assertEqual(list_transactions(db), [])
 
 
