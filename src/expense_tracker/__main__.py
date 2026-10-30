@@ -15,8 +15,20 @@ def main() -> None:
     parser.add_argument('--list-accounts', action='store_true')
     parser.add_argument('--account')
     args = parser.parse_args()
+    if (args.add_account or args.list_accounts or args.account) and not args.db:
+        parser.error('account operations require --db')
     if args.db:
         with connect(args.db) as db:
+            if args.add_account:
+                if not args.name:
+                    parser.error('--add-account requires --name')
+                create_account(db, args.add_account, args.name, args.institution)
+                print(f'Created account {args.add_account}')
+                return
+            if args.list_accounts:
+                for account_id, name, institution in list_accounts(db):
+                    print(account_id, name, institution)
+                return
             if args.csv_file:
                 inserted = import_transactions(db, load_transactions(args.csv_file))
                 print(f'Imported {inserted} new transactions')
