@@ -51,3 +51,25 @@ class AccountIdentityTests(unittest.TestCase):
             with connect(path) as db:
                 self.assertEqual(import_transactions(db, [old]), 0)
                 self.assertEqual(list_transactions(db), [old])
+
+    def test_named_account_persists(self):
+        from expense_tracker.storage import create_account, list_accounts
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'accounts.db'
+            with connect(path) as db:
+                create_account(db, 'checking', 'Checking', 'Example Bank')
+            with connect(path) as db:
+                self.assertIn(('checking', 'Checking', 'Example Bank'), list_accounts(db))
+
+    def test_duplicate_account_rejected(self):
+        from expense_tracker.storage import create_account
+        with connect(':memory:') as db:
+            create_account(db, 'checking', 'Checking')
+            with self.assertRaises(sqlite3.IntegrityError):
+                create_account(db, 'checking', 'Duplicate')
+
+    def test_blank_account_rejected(self):
+        from expense_tracker.storage import create_account
+        with connect(':memory:') as db:
+            with self.assertRaises(ValueError):
+                create_account(db, '', 'Missing ID')
