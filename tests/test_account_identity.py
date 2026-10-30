@@ -82,7 +82,7 @@ class AccountIdentityTests(unittest.TestCase):
             base = Path(folder)
             db_path = base / 'expenses.db'
             csv_path = base / 'statement.csv'
-            csv_path.write_text('date,description,amount,category,transaction_id\\n2026-10-01,Coffee,5,Food,tx-1\\n')
+            csv_path.write_text(','.join(['date','description','amount','category','transaction_id']) + chr(10) + ','.join(['2026-10-01','Coffee','5','Food','tx-1']) + chr(10))
             env = dict(os.environ)
             env['PYTHONPATH'] = str(Path(__file__).resolve().parents[1] / 'src')
 
