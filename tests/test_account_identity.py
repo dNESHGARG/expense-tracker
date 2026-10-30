@@ -73,3 +73,30 @@ class AccountIdentityTests(unittest.TestCase):
         with connect(':memory:') as db:
             with self.assertRaises(ValueError):
                 create_account(db, '', 'Missing ID')
+
+    def test_cli_create_list_and_import(self):
+        import os
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as folder:
+            base = Path(folder)
+            db_path = base / 'expenses.db'
+            csv_path = base / 'statement.csv'
+            csv_path.write_text('date,description,amount,category,transaction_id\\n2026-10-01,Coffee,5,Food,tx-1\\n')
+            env = dict(os.environ)
+            env['PYTHONPATH'] = str(Path(__file__).resolve().parents[1] / 'src')
+
+            def run(*args):
+                return subprocess.run([sys.executable, '-m', 'expense_tracker', '--db',
+                                       str(db_path), *args], env=env, text=True,
+                                      capture_output=True, check=True).stdout
+
+            self.assertIn('Created account checking',
+                          run('--add-account', 'checking', '--name', 'Checking'))
+            self.assertIn('checking', run('--list-accounts'))
+            self.assertIn('Imported 1 new transactions',
+                          run(str(csv_path), '--account', 'checking'))
+            self.assertIn('Imported 0 new transactions',
+                          run(str(csv_path), '--account', 'checking'))
+            with connect(db_path) as db:
+                self.assertEqual(list_transactions(db)[0].account_id, 'checking')
