@@ -1,6 +1,7 @@
 import argparse
+from dataclasses import replace
 from .core import category_totals, load_transactions
-from .storage import connect, import_transactions, list_transactions
+from .storage import connect, import_transactions, list_transactions, create_account, list_accounts
 
 
 def main() -> None:
@@ -8,6 +9,11 @@ def main() -> None:
     parser.add_argument('csv_file', nargs='?', help='CSV with date,description,amount,category columns')
     parser.add_argument('--month', help='Filter by YYYY-MM')
     parser.add_argument('--db', help='SQLite database file (imports CSV when provided)')
+    parser.add_argument('--add-account', metavar='ID')
+    parser.add_argument('--name')
+    parser.add_argument('--institution', default='')
+    parser.add_argument('--list-accounts', action='store_true')
+    parser.add_argument('--account')
     args = parser.parse_args()
     if args.db:
         with connect(args.db) as db:
