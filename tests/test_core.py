@@ -50,6 +50,14 @@ class ExpenseTrackerTests(unittest.TestCase):
             self.assertEqual(load_transactions(path, 'expense-negative')[0].amount,
                              Decimal('5.25'))
 
+    def test_invalid_bank_date_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'bad.csv'
+            path.write_text('Posted Date,Merchant,Amount' + chr(10) +
+                            'invalid,Coffee,5' + chr(10))
+            with self.assertRaisesRegex(ValueError, 'line 2'):
+                load_transactions(path)
+
 
 if __name__ == '__main__':
     unittest.main()
