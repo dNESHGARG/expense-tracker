@@ -14,7 +14,20 @@ def main() -> None:
     parser.add_argument('--institution', default='')
     parser.add_argument('--list-accounts', action='store_true')
     parser.add_argument('--account')
+    parser.add_argument('--amount-sign', choices=('expense-positive', 'expense-negative'),
+                        default='expense-positive',
+                        help='Single Amount column: whether positive or negative means spending')
+    parser.add_argument('--preview', action='store_true',
+                        help='Display parsed transactions without saving to SQLite')
     args = parser.parse_args()
+    if args.preview:
+        if not args.csv_file:
+            parser.error('--preview requires a CSV file')
+        transactions = load_transactions(args.csv_file, amount_sign=args.amount_sign)
+        for tx in transactions[:10]:
+            print(f'{tx.date}  {tx.amount:>12.2f}  {tx.description}  [{tx.category}]')
+        print(f'Previewed {min(len(transactions), 10)} of {len(transactions)} transactions; no database writes')
+        return
     if (args.add_account or args.list_accounts or args.account) and not args.db:
         parser.error('account operations require --db')
     if args.db:
@@ -30,7 +43,7 @@ def main() -> None:
                     print(account_id, name, institution)
                 return
             if args.csv_file:
-                transactions = load_transactions(args.csv_file)
+                transactions = load_transactions(args.csv_file, amount_sign=args.amount_sign)
                 if args.account:
                     if args.account not in {account[0] for account in list_accounts(db)}:
                         parser.error('unknown account: ' + args.account)
