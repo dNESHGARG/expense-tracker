@@ -45,6 +45,21 @@ PYTHONPATH=src python -m expense_tracker statement.csv --db expenses.db --accoun
 
 Reimporting the same statement does not duplicate its transactions. Account IDs must be unique. The `default` account is reserved for legacy and unspecified imports. Currently, CSV files must already have the required normalized columns and categories.
 
+## Bank CSV preview
+
+Check the sign convention against a known purchase and refund before importing.
+For banks that export purchases as negative amounts, run:
+
+```bash
+PYTHONPATH=src python -m expense_tracker statement.csv --preview --amount-sign expense-negative
+```
+
+Use `expense-positive` (the default) when purchases are positive. The preview
+prints up to ten rows without saving. The importer also accepts common date,
+description, debit and credit column names. With separate debit and credit
+columns, it calculates debit minus credit. Check that convention against your
+statement before importing.
+
 ## Duplicate policy
 
 When `transaction_id` is present, imports deduplicate by the pair `(account_id, transaction_id)`, allowing different accounts to use the same external ID. Without a transaction ID, the content fingerprint is scoped to the account; genuinely identical purchases in one account may still collapse. Existing databases migrate automatically and legacy records remain assigned to `default`. Use a stable, non-sensitive account ID, not a bank account number. A future release should introduce explicit account management and import-source tracking.
