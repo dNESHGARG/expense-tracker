@@ -30,6 +30,26 @@ class ExpenseTrackerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'line 2'):
                 load_transactions(path)
 
+    def test_bank_debit_credit_import(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'statement.csv'
+            path.write_text('Posted Date,Details,Debit,Credit' + chr(10) +
+                            '10/01/2026,Coffee,5.25,' + chr(10) +
+                            '10/02/2026,Refund,,2.00' + chr(10))
+            rows = load_transactions(path)
+            self.assertEqual([row.amount for row in rows],
+                             [Decimal('5.25'), Decimal('-2.00')])
+            self.assertEqual(rows[0].category, 'Uncategorized')
+
+    def test_single_amount_sign_convention(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'statement.csv'
+            path.write_text('Transaction Date,Merchant,Amount' + chr(10) +
+                            '10/01/2026,Coffee,-5.25' + chr(10))
+            self.assertEqual(load_transactions(path)[0].amount, Decimal('-5.25'))
+            self.assertEqual(load_transactions(path, 'expense-negative')[0].amount,
+                             Decimal('5.25'))
+
 
 if __name__ == '__main__':
     unittest.main()
