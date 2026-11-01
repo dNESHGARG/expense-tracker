@@ -52,7 +52,7 @@ def main() -> None:
                 print(f'Imported {inserted} new transactions')
             transactions = list_transactions(db)
     elif args.csv_file:
-        transactions = load_transactions(args.csv_file)
+        transactions = load_transactions(args.csv_file, amount_sign=args.amount_sign)
     else:
         parser.error('provide a CSV file or --db')
     totals = category_totals(transactions, args.month)
